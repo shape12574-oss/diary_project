@@ -1,6 +1,6 @@
 # diary_project
 
-A new Flutter project.
+A mobile app for diary
 
 ## Getting Started
 
