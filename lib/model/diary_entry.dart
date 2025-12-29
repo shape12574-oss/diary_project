@@ -1,45 +1,60 @@
-import 'dart:io';
-import 'dart:convert';
-import 'package:path_provider/path_provider.dart';
-
 class DiaryEntry {
   final int? id;
   final String title;
   final String content;
   final double latitude;
   final double longitude;
+  final String address;
+  final String activity;
+  final String photoPath;
+  final List<String> aiTags;
+  final DateTime createdAt;
 
+  DiaryEntry({
+    this.id,
+    required this.title,
+    required this.content,
+    required this.latitude,
+    required this.longitude,
+    required this.address,
+    required this.activity,
+    required this.photoPath,
+    required this.aiTags,
+    required this.createdAt,
+  });
 
-  DiaryEntry.fromJson(Map<String, dynamic> json)
-      : id = json['id'],
-        title = json['title'],
-        content = json['content'],
-        latitude = json['latitude'],
-        longitude = json['longitude'];
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'content': content,
-    'latitude': latitude,
-    'longitude': longitude,
-  };
-}
-
-class DiaryStorage {
-  Future<String> get _localPath async {
-    final directory = await getApplicationDocumentsDirectory();
-    return directory.path;
+  factory DiaryEntry.fromJson(Map<String, dynamic> json) {
+    return DiaryEntry(
+      id: json['id'],
+      title: json['title'],
+      content: json['content'],
+      latitude: json['latitude'],
+      longitude: json['longitude'],
+      address: json['address'],
+      activity: json['activity'],
+      photoPath: json['photoPath'],
+      aiTags: (json['aiTags'] as String).split(','),
+      createdAt: DateTime.parse(json['createdAt']),
+    );
   }
 
-  Future<File> get _localFile async {
-    final path = await _localPath;
-    return File('$path/diaries.json');
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'content': content,
+      'latitude': latitude,
+      'longitude': longitude,
+      'address': address,
+      'activity': activity,
+      'photoPath': photoPath,
+      'aiTags': aiTags.join(','),
+      'createdAt': createdAt.toIso8601String(),
+    };
   }
 
-  Future<File> writeDiaries(List<DiaryEntry> diaries) async {
-    final file = await _localFile;
-    final String jsonString = json.encode(diaries.map((d) => d.toJson()).toList());
-    return file.writeAsString(jsonString);
+  @override
+  String toString() {
+    return 'DiaryEntry(id: $id, title: $title, location: $address)';
   }
 }
