@@ -1,5 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'package:diary_project/model/diary_entry.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
@@ -23,7 +24,6 @@ class DatabaseHelper {
     );
   }
 
-
   Future<void> _createDb(Database db, int version) async {
     await db.execute('''
       CREATE TABLE diary_entries(
@@ -41,14 +41,33 @@ class DatabaseHelper {
     ''');
   }
 
-
-  Future<int> insertDiary(Map<String, dynamic> row) async {
+  Future<int> insertDiary(DiaryEntry entry) async {
     Database db = await database;
-    return await db.insert('diary_entries', row);
+    return await db.insert('diary_entries', entry.toJson());
   }
 
-  Future<List<Map<String, dynamic>>> getDiaries() async {
+  Future<List<DiaryEntry>> getAllDiaries() async {
     Database db = await database;
-    return await db.query('diary_entries');
+    final List<Map<String, dynamic>> maps = await db.query('diary_entries');
+    return List.generate(maps.length, (i) => DiaryEntry.fromJson(maps[i]));
+  }
+
+  Future<int> updateDiary(DiaryEntry entry) async {
+    Database db = await database;
+    return await db.update(
+      'diary_entries',
+      entry.toJson(),
+      where: 'id = ?',
+      whereArgs: [entry.id],
+    );
+  }
+
+  Future<int> deleteDiary(int id) async {
+    Database db = await database;
+    return await db.delete(
+      'diary_entries',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 }
