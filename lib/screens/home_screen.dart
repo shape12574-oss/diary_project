@@ -5,7 +5,7 @@ import 'package:diary_project/services/location_service.dart';
 import 'package:diary_project/services/sensor_service.dart';
 import 'package:diary_project/services/ai_service.dart';
 import 'package:diary_project/widgets/responsive_layout.dart';
-import 'diary_detail_screen.dart';
+import 'package:diary_project/services/diary_detail_screen.dart';
 import 'dart:io';
 
 class HomeScreen extends StatefulWidget {
@@ -151,41 +151,40 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _createDiaryWithPhoto() async {
     try {
       final photo = await _aiService.pickImage();
-      if (photo == null) return;
+      if (photo == null) {
+        print("No photo selected");
+        return;
+      }
 
       final location = await _locationService.getCurrentLocation();
-
       final tags = await _aiService.labelImage(photo);
+
 
       final diary = DiaryEntry(
         title: 'My Journey #${_diaries.length + 1}',
         content: 'Automatically generated diary entry',
         latitude: location['latitude'] as double,
         longitude: location['longitude'] as double,
-        address: location['address'] as String,
+        address: location['address'] as String? ?? 'Unknown',
         activity: _currentActivity,
         photoPath: photo.path,
-        aiTags: tags,
+        aiTags: tags.isEmpty ? ['no-tags'] : tags,
         createdAt: DateTime.now(),
       );
 
       await _dbHelper.insertDiary(diary);
       _loadDiaries();
-
+    } catch (e) {
+      print("Error creating diary: $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Diary created successfully!')),
+          SnackBar(content: Text('Error: $e')),
         );
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
     }
   }
 
   void _showMapView() {
-    // 可擴展為地圖視圖
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Map view coming soon!')),
     );

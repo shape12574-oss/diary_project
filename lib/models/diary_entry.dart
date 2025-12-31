@@ -26,31 +26,45 @@ class DiaryEntry {
   factory DiaryEntry.fromJson(Map<String, dynamic> json) {
     return DiaryEntry(
       id: json['id'],
-      title: json['title'],
-      content: json['content'],
-      latitude: json['latitude'],
-      longitude: json['longitude'],
-      address: json['address'],
-      activity: json['activity'],
-      photoPath: json['photoPath'],
-      aiTags: (json['aiTags'] as String).split(','),
-      createdAt: DateTime.parse(json['createdAt']),
+      title: json['title'] ?? '',
+      content: json['content'] ?? '',
+      latitude: json['latitude'] ?? 0.0,
+      longitude: json['longitude'] ?? 0.0,
+      address: json['address'] ?? 'Unknown location',
+      activity: json['activity'] ?? 'unknown',
+      photoPath: json['photoPath'] ?? '',
+      aiTags: _parseAiTags(json['aiTags']),
+      createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
     );
   }
 
+  static List<String> _parseAiTags(dynamic tagsData) {
+    if (tagsData == null) return [];
+    if (tagsData is String) {
+      return tagsData.isEmpty ? [] : tagsData.split(',');
+    }
+    return [];
+  }
+
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
+    final map = <String, dynamic>{
       'title': title,
       'content': content,
       'latitude': latitude,
       'longitude': longitude,
       'address': address,
       'activity': activity,
-      'photoPath': photoPath,
+      'photoPath': photoPath ?? '',
       'aiTags': aiTags.join(','),
       'createdAt': createdAt.toIso8601String(),
     };
+
+
+    if (id != null) {
+      map['id'] = id!;
+    }
+
+    return map;
   }
 
   @override

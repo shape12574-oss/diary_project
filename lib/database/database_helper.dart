@@ -1,6 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import 'package:diary_project/model/diary_entry.dart';
+import 'package:diary_project/models/diary_entry.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
@@ -41,9 +41,15 @@ class DatabaseHelper {
     ''');
   }
 
+
   Future<int> insertDiary(DiaryEntry entry) async {
     Database db = await database;
-    return await db.insert('diary_entries', entry.toJson());
+    final map = entry.toJson();
+
+
+    map.remove('id');
+
+    return await db.insert('diary_entries', map);
   }
 
   Future<List<DiaryEntry>> getAllDiaries() async {
