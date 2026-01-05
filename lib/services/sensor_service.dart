@@ -3,7 +3,7 @@ import 'package:sensors_plus/sensors_plus.dart';
 class SensorService {
   Stream<UserAccelerometerEvent>? _accelerometerStream;
   String _currentActivity = 'unknown';
-
+  // 可能唔整
   void startActivityTracking(void Function(String) onActivityChanged) {
     _accelerometerStream = userAccelerometerEvents;
     _accelerometerStream!.listen((event) {
@@ -11,11 +11,11 @@ class SensorService {
 
       String newActivity;
       if (totalAccel > 20) {
-        newActivity = 'running';
+        newActivity = 'running'; // 跑
       } else if (totalAccel > 5) {
-        newActivity = 'walking';
+        newActivity = 'walking'; // 行
       } else {
-        newActivity = 'still';
+        newActivity = 'still'; // 企
       }
 
       if (newActivity != _currentActivity) {
