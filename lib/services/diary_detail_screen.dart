@@ -1,17 +1,52 @@
+
 import 'package:flutter/material.dart';
 import 'dart:io';
 import '../models/diary_entry.dart';
+import '../database/database_helper.dart';
+import '../screens/edit_diary_screen.dart';
 
-class DiaryDetailScreen extends StatelessWidget {
+class DiaryDetailScreen extends StatefulWidget {
   final DiaryEntry diary;
 
   const DiaryDetailScreen({super.key, required this.diary});
 
   @override
+  State<DiaryDetailScreen> createState() => _DiaryDetailScreenState();
+}
+
+class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
+  final DatabaseHelper _dbHelper = DatabaseHelper();
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(diary.title),
+        title: Text(widget.diary.title),
+        actions: [
+          // Edit button ok 做到
+          IconButton(
+            icon: const Icon(Icons.edit),
+            tooltip: 'Edit Diary',
+            onPressed: _editDiary,
+          ),
+          // Delete button ok 做到
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'delete') {
+                _deleteDiary();
+              }
+            },
+            itemBuilder: (BuildContext context) => [
+              const PopupMenuItem(
+                value: 'delete',
+                child: ListTile(
+                  leading: Icon(Icons.delete, color: Colors.red),
+                  title: Text('Delete', style: TextStyle(color: Colors.red)),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -19,9 +54,9 @@ class DiaryDetailScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (diary.photoPath.isNotEmpty)
+              if (widget.diary.photoPath.isNotEmpty)
                 Image.file(
-                  File(diary.photoPath),
+                  File(widget.diary.photoPath),
                   height: 200,
                   width: double.infinity,
                   fit: BoxFit.cover,
@@ -47,17 +82,17 @@ class DiaryDetailScreen extends StatelessWidget {
           children: [
             ListTile(
               title: const Text('Location'),
-              subtitle: Text(diary.address),
+              subtitle: Text(widget.diary.address),
               leading: const Icon(Icons.location_on),
             ),
             ListTile(
               title: const Text('Activity'),
-              subtitle: Text(diary.activity),
+              subtitle: Text(widget.diary.activity),
               leading: const Icon(Icons.directions_walk),
             ),
             ListTile(
               title: const Text('Date'),
-              subtitle: Text('${diary.createdAt.day}/${diary.createdAt.month}/${diary.createdAt.year}'),
+              subtitle: Text('${widget.diary.createdAt.day}/${widget.diary.createdAt.month}/${widget.diary.createdAt.year}'),
               leading: const Icon(Icons.calendar_today),
             ),
           ],
@@ -78,7 +113,7 @@ class DiaryDetailScreen extends StatelessWidget {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            Text(diary.content),
+            Text(widget.diary.content),
           ],
         ),
       ),
@@ -99,7 +134,7 @@ class DiaryDetailScreen extends StatelessWidget {
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
-              children: diary.aiTags.map((tag) => Chip(
+              children: widget.diary.aiTags.map((tag) => Chip(
                 label: Text(tag),
                 backgroundColor: Colors.blue[100],
               )).toList(),
@@ -108,5 +143,53 @@ class DiaryDetailScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _editDiary() async {
+    final updatedDiary = await Navigator.push<DiaryEntry>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditDiaryScreen(diary: widget.diary),
+      ),
+    );
+
+    if (updatedDiary != null && mounted) {
+      setState(() {
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Diary updated successfully!')),
+      );
+    }
+  }
+
+  // Dialog Box ok 做到
+  void _deleteDiary() async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Diary'),
+        content: Text('Are you sure you want to delete "${widget.diary.title}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDelete == true) {
+      final count = await _dbHelper.deleteDiary(widget.diary.id!);
+      if (count > 0 && mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Diary deleted successfully!')),
+        );
+      }
+    }
   }
 }
