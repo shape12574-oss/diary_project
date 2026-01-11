@@ -12,80 +12,88 @@ class AuthScreen extends StatefulWidget {
 
 class _AuthScreenState extends State<AuthScreen> {
   final LocalAuthentication auth = LocalAuthentication();
-  bool _canCheckBiometric = false;
-  List<BiometricType> _availableBiometrics = [];
+  bool _isDeviceSecure = false;
   String _authorized = 'Not Authorized';
   bool _isAuthenticating = false;
 
   @override
   void initState() {
     super.initState();
-    _checkBiometric();
+    _checkDeviceSecurity();
   }
 
-  Future<void> _checkBiometric() async {
-    bool canCheckBiometric;
+  Future<void> _checkDeviceSecurity() async {
     try {
-      canCheckBiometric = await auth.canCheckBiometrics;
-    } on PlatformException catch (e) {
-      canCheckBiometric = false;
-      print(e);
+      _isDeviceSecure = await auth.isDeviceSupported();
+    } catch (e) {
+      _authorized = 'Error: Security check failed';
     }
-    if (!mounted) return;
-    setState(() {
-      _canCheckBiometric = canCheckBiometric;
-    });
-    _getAvailableBiometrics();
-  }
-
-  Future<void> _getAvailableBiometrics() async {
-    List<BiometricType> availableBiometrics;
-    try {
-      availableBiometrics = await auth.getAvailableBiometrics();
-    } on PlatformException catch (e) {
-      availableBiometrics = <BiometricType>[];
-      print(e);
-    }
-    if (!mounted) return;
-    setState(() {
-      _availableBiometrics = availableBiometrics;
-    });
+    if (mounted) setState(() {});
   }
 
   Future<void> _authenticate() async {
-    bool authenticated = false;
+    if (!_isDeviceSecure) {
+      setState(() {
+        _authorized = 'Error: No screen lock set';
+      });
+      _showSecuritySetupDialog();
+      return;
+    }
+
     try {
       setState(() {
         _isAuthenticating = true;
-        _authorized = 'Authenticating';
+        _authorized = 'Checking...';
       });
-      authenticated = await auth.authenticate(
-        localizedReason: 'Scan your fingerprint to access TravelSnap',
+
+      final authenticated = await auth.authenticate(
+        localizedReason: 'Access your travel diary',
         options: const AuthenticationOptions(
           stickyAuth: true,
-          biometricOnly: true,
+          biometricOnly: false,
         ),
       );
+
       setState(() {
         _isAuthenticating = false;
-        _authorized = authenticated ? 'Authorized' : 'Not Authorized';
+        _authorized = authenticated ? '✅ Authorized' : '❌ Not Authorized';
       });
+
+      if (authenticated) {
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const HomeScreen()),
+            );
+          }
+        });
+      }
     } on PlatformException catch (e) {
       setState(() {
         _isAuthenticating = false;
-        _authorized = 'Error - ${e.message}';
+        _authorized = '❌ Error: ${e.message}';
       });
-      return;
-    }
-    if (!mounted) return;
-    if (authenticated) {
-      _navigateToHome();
+      if (e.code == 'NoCredential') {
+        _showSecuritySetupDialog();
+      }
     }
   }
 
-  void _navigateToHome() {
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => const HomeScreen()),
+  void _showSecuritySetupDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Security Required'),
+        content: const Text(
+          'Please set a screen lock (PIN/Password/Fingerprint) in device settings.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -98,33 +106,53 @@ class _AuthScreenState extends State<AuthScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('TravelSnap Authentication'),
-      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Icon(
               Icons.fingerprint,
-              size: 100,
+              size: 120,
               color: Colors.blue,
             ),
-            const SizedBox(height: 20),
-            Text('Can check biometric: $_canCheckBiometric'),
-            const SizedBox(height: 10),
-            Text('Available biometrics: ${_availableBiometrics.join(", ")}'),
-            const SizedBox(height: 10),
-            Text('Status: $_authorized'),
-            const SizedBox(height: 30),
+            const SizedBox(height: 32),
+            Text(
+              _authorized,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: _authorized.startsWith('✅') ? Colors.green :
+                _authorized.startsWith('❌') ? Colors.red :
+                Colors.black,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 48),
             ElevatedButton.icon(
-              icon: const Icon(Icons.fingerprint),
-              label: const Text('Authenticate'),
-              onPressed: _canCheckBiometric ? _authenticate : null,
+              icon: const Icon(Icons.fingerprint, size: 28),
+              label: const Text(
+                'Authenticate',
+                style: TextStyle(fontSize: 18),
+              ),
+              onPressed: _isDeviceSecure ? _authenticate : null,
               style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
+            if (!_isDeviceSecure) ...[
+              const SizedBox(height: 24),
+              const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  '⚠️ Please enable screen lock in device settings',
+                  style: TextStyle(color: Colors.red, fontSize: 14),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
           ],
         ),
       ),

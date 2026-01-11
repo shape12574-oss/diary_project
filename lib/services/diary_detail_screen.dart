@@ -23,13 +23,13 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
       appBar: AppBar(
         title: Text(widget.diary.title),
         actions: [
-          // Edit button ok 做到
+          // Edit button
           IconButton(
             icon: const Icon(Icons.edit),
             tooltip: 'Edit Diary',
             onPressed: _editDiary,
           ),
-          // Delete button ok 做到
+          // Delete button
           PopupMenuButton<String>(
             onSelected: (value) {
               if (value == 'delete') {
@@ -162,7 +162,7 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
     }
   }
 
-  // Dialog Box ok 做到
+  // Dialog Box
   void _deleteDiary() async {
     final shouldDelete = await showDialog<bool>(
       context: context,
