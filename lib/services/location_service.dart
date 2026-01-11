@@ -1,4 +1,7 @@
 import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:async';
 
 class LocationService {
   Future<bool> _checkPermission() async {
@@ -26,12 +29,10 @@ class LocationService {
         desiredAccuracy: LocationAccuracy.high,
       );
 
-      String address = 'Unknown location';
-      try {
-        address = await _getAddressFromLatLng(position.latitude, position.longitude);
-      } catch (e) {
-        address = "Lat: ${position.latitude.toStringAsFixed(4)}, Lng: ${position.longitude.toStringAsFixed(4)}";
-      }
+      String address = await _getDisplayNameOnly(
+        position.latitude,
+        position.longitude,
+      );
 
       return {
         'latitude': position.latitude,
@@ -43,13 +44,30 @@ class LocationService {
     }
   }
 
-  Future<String> _getAddressFromLatLng(double lat, double lng) async {
+  // Only fetch display_name
+  Future<String> _getDisplayNameOnly(double lat, double lng) async {
     try {
       final url = 'https://nominatim.openstreetmap.org/reverse?'
-          'lat=$lat&lon=$lng&format=json';
-      return "Location: ${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}";
+          'lat=$lat&lon=$lng&format=json&zoom=18';
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {'User-Agent': 'TravelSnap/1.0'},
+      ).timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        final displayName = data['display_name'];
+        if (displayName is String && displayName.isNotEmpty) {
+          return displayName;
+        }
+      }
     } catch (e) {
-      return "Location: ${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}";
+      print('Geocoding error: $e');
     }
+
+    // Return lat and lng if api request failed
+    return '${lat.toStringAsFixed(4)}°, ${lng.toStringAsFixed(4)}°';
   }
 }
