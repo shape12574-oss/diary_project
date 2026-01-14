@@ -57,9 +57,8 @@ class _DiaryDetailScreenState extends State<DiaryDetailScreen> {
               if (widget.diary.photoPath.isNotEmpty)
                 Image.file(
                   File(widget.diary.photoPath),
-                  height: 200,
                   width: double.infinity,
-                  fit: BoxFit.cover,
+                  fit: BoxFit.contain, // Full size
                 ),
               const SizedBox(height: 16),
               _buildInfoCard(),
