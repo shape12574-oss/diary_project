@@ -117,10 +117,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return _buildDiaryList();
   }
 
-  // === 空狀態 ===
   Widget _buildEmptyState() {
     return ListView(
-      // 關鍵：ListView 讓 RefreshIndicator 可以下拉
       physics: const AlwaysScrollableScrollPhysics(),
       children: [
         SizedBox(
@@ -163,9 +161,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 MaterialPageRoute(
                   builder: (_) => DiaryDetailScreen(diary: diary),
                 ),
-              ).then((_) => _loadDiaries()); // 返回時刷新
+              ).then((_) => _loadDiaries());
             },
-            // 長按刪除
             onLongPress: () => _deleteDiaryFromList(diary),
             child: ListTile(
               contentPadding: const EdgeInsets.all(12),
@@ -254,13 +251,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // === TABLET LAYOUT ===
   Widget _buildTabletLayout() {
-    // 平板暫時使用移動佈局（可擴展）
     return _buildMobileLayout();
   }
 
-  // === 核心功能：創建日記 ===
   Future<void> _createDiaryWithPhoto() async {
     try {
       final photo = await _aiService.pickImage();
@@ -298,9 +292,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // === 增強刪除功能：長按刪除 ===
   Future<void> _deleteDiaryFromList(DiaryEntry diary) async {
-    // 顯示確認對話框
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -323,7 +315,6 @@ class _HomeScreenState extends State<HomeScreen> {
       try {
         final count = await _dbHelper.deleteDiary(diary.id!);
         if (count > 0) {
-          // 立即從 UI 移除
           setState(() {
             _diaries.removeWhere((d) => d.id == diary.id);
           });
@@ -335,7 +326,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 action: SnackBarAction(
                   label: 'Undo',
                   onPressed: () {
-                    // 撤銷刪除
                     _dbHelper.insertDiary(diary);
                     _loadDiaries();
                   },
